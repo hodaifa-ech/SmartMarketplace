@@ -1,0 +1,207 @@
+﻿@{
+    ViewData["Title"] = "Générateur de Mission Intelligent";
+}
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .container {
+        max-width: 900px;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+    }
+
+    .card-header {
+        background-color: #0d6efd;
+        color: white;
+        font-weight: 500;
+    }
+    
+    .form-control:disabled, .form-select:disabled {
+        background-color: #e9ecef;
+        opacity: 1;
+    }
+
+    .spinner-border {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+</style>
+
+<div class="text-center my-4">
+    <h1 class="display-4">Générateur de Mission Intelligent</h1>
+    <p class="lead text-muted">Décrivez votre besoin en quelques mots, et laissez l'IA créer une fiche de mission complète.</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="mb-3">
+            <label for="prompt-input" class="form-label fw-bold">Décrivez votre besoin ici :</label>
+            <textarea class="form-control" id="prompt-input" rows="3" placeholder="Exemple : Je cherche un développeur React senior pour créer une application e-commerce."></textarea>
+        </div>
+        <button class="btn btn-primary w-100" id="generate-btn">
+            <span id="btn-text">Générer la mission</span>
+            <span id="btn-spinner" class="spinner-border ms-2 d-none" role="status" aria-hidden="true"></span>
+        </button>
+    </div>
+</div>
+
+<div id="mission-results" class="d-none">
+    <div class="card">
+        <div class="card-header">
+            Détails de la mission générée
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="mb-3">
+                    <label for="res-title" class="form-label">Titre de la mission</label>
+                    <input type="text" class="form-control" id="res-title" disabled>
+                </div>
+                <div class="mb-3">
+                    <label for="res-description" class="form-label">Description</label>
+                    <textarea class="form-control" id="res-description" rows="6" disabled></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="res-country" class="form-label">Pays</label>
+                        <input type="text" class="form-control" id="res-country" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="res-city" class="form-label">Ville</label>
+                        <input type="text" class="form-control" id="res-city" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="res-workMode" class="form-label">Mode de travail</label>
+                        <input type="text" class="form-control" id="res-workMode" disabled>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                       <label class="form-label">Démarrage immédiat</label>
+                       <input type="text" class="form-control" id="res-startImmediately" disabled>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="res-duration" class="form-label">Durée</label>
+                        <input type="text" class="form-control" id="res-duration" disabled>
+                    </div>
+                     <div class="col-md-3">
+                        <label for="res-startDate" class="form-label">Date de démarrage</label>
+                        <input type="text" class="form-control" id="res-startDate" disabled>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="res-contractType" class="form-label">Type de contrat</label>
+                        <input type="text" class="form-control" id="res-contractType" disabled>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="res-tjm" class="form-label">TJM estimé (€)</label>
+                        <input type="text" class="form-control" id="res-tjm" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="res-domain" class="form-label">Domaine d'intervention</label>
+                        <input type="text" class="form-control" id="res-domain" disabled>
+                    </div>
+                     <div class="col-md-4">
+                        <label for="res-experience" class="form-label">Expérience requise</label>
+                        <input type="text" class="form-control" id="res-experience" disabled>
+                    </div>
+                </div>
+                 <div class="mb-3">
+                    <label for="res-position" class="form-label">Fonction visée</label>
+                    <input type="text" class="form-control" id="res-position" disabled>
+                </div>
+                <div class="mb-3">
+                    <label for="res-expertises" class="form-label">Expertises requises</label>
+                    <input type="text" class="form-control" id="res-expertises" disabled>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const generateBtn = document.getElementById('generate-btn');
+        const promptInput = document.getElementById('prompt-input');
+        const btnText = document.getElementById('btn-text');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const resultsDiv = document.getElementById('mission-results');
+
+        generateBtn.addEventListener('click', async function () {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                alert('Veuillez entrer une description de votre besoin.');
+                return;
+            }
+
+            // --- UI: Start loading ---
+            setLoading(true);
+
+            try {
+                const response = await fetch('/api/generate-mission', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                populateForm(data);
+                resultsDiv.classList.remove('d-none');
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Une erreur est survenue: ${error.message}`);
+            } finally {
+                // --- UI: Stop loading ---
+                setLoading(false);
+            }
+        });
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                generateBtn.disabled = true;
+                btnText.textContent = 'Génération en cours...';
+                btnSpinner.classList.remove('d-none');
+            } else {
+                generateBtn.disabled = false;
+                btnText.textContent = 'Générer la mission';
+                btnSpinner.classList.add('d-none');
+            }
+        }
+        
+        function populateForm(data) {
+            document.getElementById('res-title').value = data.title || '';
+            // Handle newlines in the description correctly
+            document.getElementById('res-description').value = data.description.replace(/\\n/g, '\n') || '';
+            document.getElementById('res-country').value = data.country || '';
+            document.getElementById('res-city').value = data.city || '';
+            document.getElementById('res-workMode').value = data.workMode || '';
+            document.getElementById('res-startImmediately').value = data.startImmediately ? 'Oui' : 'Non';
+            document.getElementById('res-duration').value = `${data.duration} ${data.durationType}` || '';
+            document.getElementById('res-startDate').value = data.startDate || 'N/A';
+            document.getElementById('res-contractType').value = data.contractType || '';
+            document.getElementById('res-tjm').value = data.estimatedDailyRate || 'N/A';
+            document.getElementById('res-domain').value = data.domain || '';
+            document.getElementById('res-experience').value = `${data.experienceYear} ans` || '';
+            document.getElementById('res-position').value = data.position || '';
+            document.getElementById('res-expertises').value = data.requiredExpertises.join(', ') || '';
+        }
+    });
+</script>
+}
