@@ -108,3 +108,4 @@
 /home/hodaifa/Dotnet/SmartMarketplace/SmartMarketplace.Web/bin/Debug/net8.0/tr/Microsoft.CodeAnalysis.Workspaces.resources.dll
 /home/hodaifa/Dotnet/SmartMarketplace/SmartMarketplace.Web/bin/Debug/net8.0/zh-Hans/Microsoft.CodeAnalysis.Workspaces.resources.dll
 /home/hodaifa/Dotnet/SmartMarketplace/SmartMarketplace.Web/bin/Debug/net8.0/zh-Hant/Microsoft.CodeAnalysis.Workspaces.resources.dll
+/home/hodaifa/Dotnet/SmartMarketplace/SmartMarketplace.Web/obj/Debug/net8.0/SmartMarketplace.Web.sourcelink.json

@@ -1,13 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using SmartMarketplace.Web.ViewModels;
 
 namespace SmartMarketplace.Web.Services;
 
-public interface IGroqService
-{
-    Task<string> GenerateMissionJsonAsync(string userPrompt);
-}
+
 
 public class GroqService : IGroqService
 {
@@ -22,35 +20,39 @@ public class GroqService : IGroqService
         _apiKey = _configuration["Groq:ApiKey"] ?? throw new InvalidOperationException("Groq API key not configured.");
     }
 
+    // La signature de la méthode est simplifiée
     public async Task<string> GenerateMissionJsonAsync(string userPrompt)
     {
         var httpClient = _httpClientFactory.CreateClient("Groq");
         
-        // The detailed system prompt that forces the AI to respond in the desired JSON format.
+        // --- NOUVEAU SYSTEM PROMPT PLUS INTELLIGENT ---
         var systemPrompt = @"
-Tu es un assistant spécialisé dans la création de fiches mission pour une marketplace de freelances.
-À partir d'une brève description, tu dois générer une fiche mission complète.
-Réponds UNIQUEMENT au format JSON suivant (sans commentaires, sans texte avant ou après le JSON).
+Tu es un assistant expert multilingue pour la création de fiches de mission.
+Ta tâche est de générer une fiche de mission en JSON en suivant ces règles STRICTES:
 
+1.  **Priorité 1 : Détecter une langue demandée.** Analyse la demande de l'utilisateur. S'il mentionne explicitement une langue (ex: 'en chinois', 'in English', 'en español'), tu DOIS générer TOUTE la fiche mission dans cette langue.
+2.  **Priorité 2 : Détection automatique.** Si aucune langue n'est explicitement demandée, détecte la langue principale de la demande et génère la fiche mission dans cette langue.
+3.  **Format de sortie :** Réponds UNIQUEMENT avec l'objet JSON, sans aucun texte, commentaire, ou explication avant ou après. Les champs `country` et `city` doivent rester en anglais pour la cohérence des données, mais tous les autres champs textuels (`title`, `description`, `domain`, `position`) doivent être dans la langue de sortie déterminée.
+
+Voici le format JSON à respecter :
 {
-  ""title"": ""Titre concis et accrocheur de la mission"",
-  ""description"": ""Description détaillée incluant contexte et responsabilités. Utilise des retours à la ligne avec \n pour la mise en forme."",
+  ""title"": ""Titre concis et accrocheur"",
+  ""description"": ""Description détaillée. Utilise \n pour les sauts de ligne."",
   ""country"": ""Nom du pays en anglais"",
   ""city"": ""Nom de la ville en anglais"",
   ""workMode"": ""Un parmi: REMOTE, ONSITE, HYBRID"",
   ""duration"": ""Durée (nombre)"",
   ""durationType"": ""Unité de durée (MONTH, YEAR)"",
   ""startImmediately"": true/false,
-  ""startDate"": ""Date de début au format yyyy-MM-dd (seulement si startImmediately est false, sinon null)"",
+  ""startDate"": ""Date yyyy-MM-dd (si startImmediately=false, sinon null)"",
   ""experienceYear"": ""Un parmi: 0-3, 3-7, 7-12, 12+"",
   ""contractType"": ""Un parmi: FORFAIT, REGIE"",
-  ""estimatedDailyRate"": ""Taux journalier moyen en euros (nombre uniquement, sans le symbole €)"",
-  ""domain"": ""Domaine d'activité principal (ex: Technology, Finance, Marketing)"",
-  ""position"": ""Intitulé du poste/fonction (ex: React Developer, Project Manager)"",
-  ""requiredExpertises"": [""expertise1"", ""expertise2"", ""...""]
+  ""estimatedDailyRate"": ""TJM en euros (nombre uniquement)"",
+  ""domain"": ""Domaine d'activité principal"",
+  ""position"": ""Intitulé du poste"",
+  ""requiredExpertises"": [""expertise1"", ""expertise2""]
 }
 ";
-
         var requestPayload = new
         {
             messages = new[]
@@ -58,7 +60,7 @@ Réponds UNIQUEMENT au format JSON suivant (sans commentaires, sans texte avant 
                 new { role = "system", content = systemPrompt },
                 new { role = "user", content = userPrompt }
             },
-            model = "llama3-70b-8192", // Using the powerful Llama 3 70b model
+            model = "llama3-70b-8192",
             temperature = 0.5,
             max_tokens = 2048,
             top_p = 1,
@@ -77,12 +79,11 @@ Réponds UNIQUEMENT au format JSON suivant (sans commentaires, sans texte avant 
 
         var responseBody = await response.Content.ReadAsStringAsync();
         
-        // Safely parse the JSON and extract the content
         try
         {
             var jsonResponse = JsonNode.Parse(responseBody);
             var missionJson = jsonResponse?["choices"]?[0]?["message"]?["content"]?.GetValue<string>();
-            return missionJson ?? "{}"; // Return empty JSON if parsing fails
+            return missionJson ?? "{}";
         }
         catch (JsonException ex)
         {

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMarketplace.Web.Data;
 using SmartMarketplace.Web.Services;
+using SmartMarketplace.Web.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 

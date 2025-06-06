@@ -1,49 +1,33 @@
 ﻿@{
-    ViewData["Title"] = "Générateur de Mission Intelligent";
+ViewData["Title"] = "Générateur de Mission Intelligent";
 }
 
 <style>
-    body {
-        background-color: #f8f9fa;
-    }
-
-    .container {
-        max-width: 900px;
-    }
-
-    .card {
-        border: none;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s;
-    }
-
-    .card-header {
-        background-color: #0d6efd;
-        color: white;
-        font-weight: 500;
-    }
-    
-    .form-control:disabled, .form-select:disabled {
-        background-color: #e9ecef;
-        opacity: 1;
-    }
-
-    .spinner-border {
-        width: 1.5rem;
-        height: 1.5rem;
+    body { background-color: #f8f9fa; }
+    .container { max-width: 900px; }
+    .card { border: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    .card-header { background-color: #0d6efd; color: white; font-weight: 500; }
+    .form-control:disabled, .form-select:disabled { background-color: #e9ecef; opacity: 1; }
+    .spinner-border { width: 1.5rem; height: 1.5rem; }
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
     }
 </style>
 
 <div class="text-center my-4">
     <h1 class="display-4">Générateur de Mission Intelligent</h1>
-    <p class="lead text-muted">Décrivez votre besoin en quelques mots, et laissez l'IA créer une fiche de mission complète.</p>
+    <p class="lead text-muted">Décrivez votre besoin, et spécifiez une langue si vous le souhaitez !</p>
 </div>
 
 <div class="card mb-4">
     <div class="card-body">
         <div class="mb-3">
             <label for="prompt-input" class="form-label fw-bold">Décrivez votre besoin ici :</label>
-            <textarea class="form-control" id="prompt-input" rows="3" placeholder="Exemple : Je cherche un développeur React senior pour créer une application e-commerce."></textarea>
+            <!-- Placeholder mis à jour pour suggérer la nouvelle fonctionnalité -->
+            <textarea class="form-control" id="prompt-input" rows="3" placeholder="Exemple : 'Je cherche un développeur .NET pour une mission à Paris.' ou 'Generate a mission for a python developer in London in english.'"></textarea>
         </div>
         <button class="btn btn-primary w-100" id="generate-btn">
             <span id="btn-text">Générer la mission</span>
@@ -53,6 +37,7 @@
 </div>
 
 <div id="mission-results" class="d-none">
+    <!-- Le reste du formulaire de résultats est identique, pas besoin de le copier à nouveau -->
     <div class="card">
         <div class="card-header">
             Détails de la mission générée
@@ -83,14 +68,14 @@
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
-                       <label class="form-label">Démarrage immédiat</label>
-                       <input type="text" class="form-control" id="res-startImmediately" disabled>
+                        <label class="form-label">Démarrage immédiat</label>
+                        <input type="text" class="form-control" id="res-startImmediately" disabled>
                     </div>
                     <div class="col-md-3">
                         <label for="res-duration" class="form-label">Durée</label>
                         <input type="text" class="form-control" id="res-duration" disabled>
                     </div>
-                     <div class="col-md-3">
+                    <div class="col-md-3">
                         <label for="res-startDate" class="form-label">Date de démarrage</label>
                         <input type="text" class="form-control" id="res-startDate" disabled>
                     </div>
@@ -108,12 +93,12 @@
                         <label for="res-domain" class="form-label">Domaine d'intervention</label>
                         <input type="text" class="form-control" id="res-domain" disabled>
                     </div>
-                     <div class="col-md-4">
+                    <div class="col-md-4">
                         <label for="res-experience" class="form-label">Expérience requise</label>
                         <input type="text" class="form-control" id="res-experience" disabled>
                     </div>
                 </div>
-                 <div class="mb-3">
+                <div class="mb-3">
                     <label for="res-position" class="form-label">Fonction visée</label>
                     <input type="text" class="form-control" id="res-position" disabled>
                 </div>
@@ -129,12 +114,14 @@
 @section Scripts {
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Récupération des éléments du DOM
         const generateBtn = document.getElementById('generate-btn');
         const promptInput = document.getElementById('prompt-input');
         const btnText = document.getElementById('btn-text');
         const btnSpinner = document.getElementById('btn-spinner');
         const resultsDiv = document.getElementById('mission-results');
 
+        // Ajout de l'événement sur le clic du bouton
         generateBtn.addEventListener('click', async function () {
             const prompt = promptInput.value.trim();
             if (!prompt) {
@@ -142,17 +129,18 @@
                 return;
             }
 
-            // --- UI: Start loading ---
             setLoading(true);
 
             try {
+                const requestBody = { prompt: prompt };
+
                 const response = await fetch('/api/generate-mission', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
@@ -162,17 +150,17 @@
 
                 const data = await response.json();
                 populateForm(data);
-                resultsDiv.classList.remove('d-none');
+                resultsDiv.classList.remove('d-none'); // Affiche les résultats
 
             } catch (error) {
                 console.error('Error:', error);
                 alert(`Une erreur est survenue: ${error.message}`);
             } finally {
-                // --- UI: Stop loading ---
                 setLoading(false);
             }
         });
 
+        
         function setLoading(isLoading) {
             if (isLoading) {
                 generateBtn.disabled = true;
@@ -185,22 +173,23 @@
             }
         }
         
+       
         function populateForm(data) {
             document.getElementById('res-title').value = data.title || '';
-            // Handle newlines in the description correctly
-            document.getElementById('res-description').value = data.description.replace(/\\n/g, '\n') || '';
+            // Gère correctement les sauts de ligne dans la description
+            document.getElementById('res-description').value = (data.description || '').replace(/\\n/g, '\n');
             document.getElementById('res-country').value = data.country || '';
             document.getElementById('res-city').value = data.city || '';
             document.getElementById('res-workMode').value = data.workMode || '';
             document.getElementById('res-startImmediately').value = data.startImmediately ? 'Oui' : 'Non';
-            document.getElementById('res-duration').value = `${data.duration} ${data.durationType}` || '';
+            document.getElementById('res-duration').value = data.duration ? `${data.duration} ${data.durationType}` : '';
             document.getElementById('res-startDate').value = data.startDate || 'N/A';
             document.getElementById('res-contractType').value = data.contractType || '';
             document.getElementById('res-tjm').value = data.estimatedDailyRate || 'N/A';
             document.getElementById('res-domain').value = data.domain || '';
-            document.getElementById('res-experience').value = `${data.experienceYear} ans` || '';
+            document.getElementById('res-experience').value = data.experienceYear ? `${data.experienceYear} ans` : '';
             document.getElementById('res-position').value = data.position || '';
-            document.getElementById('res-expertises').value = data.requiredExpertises.join(', ') || '';
+            document.getElementById('res-expertises').value = (data.requiredExpertises || []).join(', ') || '';
         }
     });
 </script>

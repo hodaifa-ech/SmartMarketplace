@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // Assurez-vous d'avoir cet using
 using SmartMarketplace.Web.Data;
 using SmartMarketplace.Web.Models;
 using SmartMarketplace.Web.Services;
@@ -25,68 +26,74 @@ public class HomeController : Controller
     {
         return View();
     }
-
-    [HttpPost]
-    [Route("api/generate-mission")]
-    public async Task<IActionResult> GenerateMission([FromBody] PromptRequest request)
+    
+    // NOUVELLE ACTION POUR L'HISTORIQUE
+    public async Task<IActionResult> History()
     {
-        if (string.IsNullOrWhiteSpace(request.Prompt))
-        {
-            return BadRequest(new { message = "Prompt cannot be empty." });
-        }
-
-        try
-        {
-            // 1. Call Groq to get the mission details as a JSON string
-            var missionJson = await _groqService.GenerateMissionJsonAsync(request.Prompt);
-
-            // 2. Deserialize the JSON string into our ViewModel
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var viewModel = JsonSerializer.Deserialize<MissionViewModel>(missionJson, options);
-
-            if (viewModel == null)
-            {
-                return StatusCode(500, new { message = "Failed to deserialize AI response." });
-            }
-            
-            // 3. Map ViewModel to Database Entity
-            var mission = new Mission
-            {
-                Title = viewModel.Title,
-                Description = viewModel.Description,
-                Country = viewModel.Country,
-                City = viewModel.City,
-                WorkMode = viewModel.WorkMode,
-                Duration = viewModel.Duration,
-                DurationType = viewModel.DurationType,
-                StartImmediately = viewModel.StartImmediately,
-                StartDate = viewModel.StartImmediately || string.IsNullOrEmpty(viewModel.StartDate) 
-                    ? null 
-                    : DateOnly.Parse(viewModel.StartDate),
-                ExperienceYear = viewModel.ExperienceYear,
-                ContractType = viewModel.ContractType,
-                EstimatedDailyRate = viewModel.EstimatedDailyRate,
-                Domain = viewModel.Domain,
-                Position = viewModel.Position,
-                // Store list as a comma-separated string
-                RequiredExpertises = string.Join(", ", viewModel.RequiredExpertises),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // 4. Save the generated mission to the database
-            _context.Missions.Add(mission);
-            await _context.SaveChangesAsync();
-
-            // 5. Return the ViewModel to the front-end
-            return Json(viewModel);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while generating the mission.");
-            return StatusCode(500, new { message = "An internal error occurred. Please try again." });
-        }
+        var missions = await _context.Missions
+                                     .OrderByDescending(m => m.CreatedAt)
+                                     .ToListAsync();
+        return View(missions);
     }
 
+
+   [HttpPost]
+[Route("api/generate-mission")]
+public async Task<IActionResult> GenerateMission([FromBody] PromptRequest request) // PromptRequest ne contient plus que le prompt
+{
+    if (string.IsNullOrWhiteSpace(request.Prompt))
+    {
+        return BadRequest(new { message = "Prompt cannot be empty." });
+    }
+
+    try
+    {
+        // 1. Appel simplifié au service Groq
+        var missionJson = await _groqService.GenerateMissionJsonAsync(request.Prompt);
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var viewModel = JsonSerializer.Deserialize<MissionViewModel>(missionJson, options);
+
+        if (viewModel == null)
+        {
+            return StatusCode(500, new { message = "Failed to deserialize AI response." });
+        }
+        
+        var mission = new Mission
+        {
+            Title = viewModel.Title,
+            Description = viewModel.Description,
+            Country = viewModel.Country,
+            City = viewModel.City,
+            WorkMode = viewModel.WorkMode,
+            Duration = viewModel.Duration,
+            DurationType = viewModel.DurationType,
+            StartImmediately = viewModel.StartImmediately,
+            StartDate = viewModel.StartImmediately || string.IsNullOrEmpty(viewModel.StartDate) 
+                ? null 
+                : DateOnly.Parse(viewModel.StartDate),
+            ExperienceYear = viewModel.ExperienceYear,
+            ContractType = viewModel.ContractType,
+            EstimatedDailyRate = viewModel.EstimatedDailyRate,
+            Domain = viewModel.Domain,
+            Position = viewModel.Position,
+            RequiredExpertises = string.Join(", ", viewModel.RequiredExpertises),
+            // 2. La langue est maintenant toujours en "Auto" car l'IA gère tout
+            GeneratedLanguage = "Auto-detected",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Missions.Add(mission);
+        await _context.SaveChangesAsync();
+
+        return Json(viewModel);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "An error occurred while generating the mission.");
+        return StatusCode(500, new { message = $"An internal error occurred: {ex.Message}" });
+    }
+}
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

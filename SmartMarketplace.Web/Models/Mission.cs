@@ -25,5 +25,9 @@ public class Mission
     public string Domain { get; set; } = string.Empty;
     public string Position { get; set; } = string.Empty;
     public string RequiredExpertises { get; set; } = string.Empty; // Stored as a comma-separated string
+    [StringLength(50)]
+    public string GeneratedLanguage { get; set; } = "Auto-detected"; // Default value
+
+   
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -1,0 +1,139 @@
+@model IEnumerable<SmartMarketplace.Web.Models.Mission>
+
+@{
+    ViewData["Title"] = "Historique des Missions";
+}
+
+<style>
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: #f1f1f1;
+    }
+</style>
+
+<div class="text-center my-4">
+    <h1 class="display-4">Historique des Missions</h1>
+    <p class="lead text-muted">Cliquez sur une mission pour voir les détails.</p>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Titre de la Mission</th>
+                        <th>Fonction</th>
+                        <th>Lieu</th>
+                        <th>Date de Création</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <!-- On ajoute les data-* attributes pour stocker les détails de la mission -->
+                        <tr data-bs-toggle="modal" 
+                            data-bs-target="#missionDetailModal"
+                            data-title="@item.Title"
+                            data-description="@item.Description"
+                            data-position="@item.Position"
+                            data-domain="@item.Domain"
+                            data-city="@item.City"
+                            data-country="@item.Country"
+                            data-workmode="@item.WorkMode"
+                            data-duration="@($"{item.Duration} {item.DurationType}")"
+                            data-startimmediately="@(item.StartImmediately ? "Oui" : "Non")"
+                            data-startdate="@(item.StartDate?.ToString("yyyy-MM-dd") ?? "N/A")"
+                            data-contracttype="@item.ContractType"
+                            data-experience="@item.ExperienceYear"
+                            data-tjm="@(item.EstimatedDailyRate?.ToString() ?? "N/A")"
+                            data-expertises="@item.RequiredExpertises">
+                            <td>@item.Title</td>
+                            <td>@item.Position</td>
+                            <td>@item.City, @item.Country</td>
+                            <td>@item.CreatedAt.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL POUR LES DÉTAILS DE LA MISSION -->
+<div class="modal fade" id="missionDetailModal" tabindex="-1" aria-labelledby="missionDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Détails de la mission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Description</h6>
+                <p id="modal-description" style="white-space: pre-wrap;"></p>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6"><strong>Fonction :</strong> <span id="modal-position"></span></div>
+                    <div class="col-md-6"><strong>Domaine :</strong> <span id="modal-domain"></span></div>
+                    <div class="col-md-6"><strong>Lieu :</strong> <span id="modal-location"></span></div>
+                    <div class="col-md-6"><strong>Mode de travail :</strong> <span id="modal-workmode"></span></div>
+                    <div class="col-md-6"><strong>Durée :</strong> <span id="modal-duration"></span></div>
+                    <div class="col-md-6"><strong>Démarrage :</strong> <span id="modal-startdate"></span></div>
+                    <div class="col-md-6"><strong>Contrat :</strong> <span id="modal-contracttype"></span></div>
+                    <div class="col-md-6"><strong>Expérience :</strong> <span id="modal-experience"></span> ans</div>
+                    <div class="col-md-6"><strong>TJM :</strong> <span id="modal-tjm"></span> €</div>
+                </div>
+                <hr />
+                <h6>Expertises requises</h6>
+                <p id="modal-expertises"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const missionDetailModal = document.getElementById('missionDetailModal');
+        missionDetailModal.addEventListener('show.bs.modal', function (event) {
+            // Bouton ou ligne de tableau qui a déclenché la modal
+            const triggerElement = event.relatedTarget;
+
+            // Extraire les informations des attributs data-*
+            const title = triggerElement.getAttribute('data-title');
+            const description = triggerElement.getAttribute('data-description');
+            const position = triggerElement.getAttribute('data-position');
+            const domain = triggerElement.getAttribute('data-domain');
+            const location = `${triggerElement.getAttribute('data-city')}, ${triggerElement.getAttribute('data-country')}`;
+            const workmode = triggerElement.getAttribute('data-workmode');
+            const duration = triggerElement.getAttribute('data-duration');
+            const startDate = triggerElement.getAttribute('data-startdate');
+            const startImmediately = triggerElement.getAttribute('data-startimmediately');
+            const contracttype = triggerElement.getAttribute('data-contracttype');
+            const experience = triggerElement.getAttribute('data-experience');
+            const tjm = triggerElement.getAttribute('data-tjm');
+            const expertises = triggerElement.getAttribute('data-expertises');
+
+            // Mettre à jour le contenu de la modal
+            const modalTitle = missionDetailModal.querySelector('.modal-title');
+            modalTitle.textContent = title;
+            
+            document.getElementById('modal-description').textContent = description;
+            document.getElementById('modal-position').textContent = position;
+            document.getElementById('modal-domain').textContent = domain;
+            document.getElementById('modal-location').textContent = location;
+            document.getElementById('modal-workmode').textContent = workmode;
+            document.getElementById('modal-duration').textContent = duration;
+            document.getElementById('modal-startdate').textContent = startImmediately === 'Oui' ? 'Immédiat' : startDate;
+            document.getElementById('modal-contracttype').textContent = contracttype;
+            document.getElementById('modal-experience').textContent = experience;
+            document.getElementById('modal-tjm').textContent = tjm;
+            document.getElementById('modal-expertises').textContent = expertises;
+        });
+    });
+</script>
+}
